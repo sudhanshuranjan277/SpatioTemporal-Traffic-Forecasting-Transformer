@@ -1,301 +1,433 @@
-# 🚦 Traffic Forecasting Research
-### TransGTR (KDD 2023) Implementation & Extension Framework
+# 🚦 SpatioTemporal Traffic Forecasting Transformer (TransGTR)
 
-A modular deep learning framework for **graph-based traffic forecasting** inspired by the paper:
+## Transformer-based Graph Traffic Forecasting Framework
 
-> **Transferable Graph Structure Learning for Graph-based Traffic Forecasting Across Cities (TransGTR)**  
+A modular deep learning framework for **spatio-temporal traffic forecasting** inspired by:
+
+> Transferable Graph Structure Learning for Graph-based Traffic Forecasting Across Cities (TransGTR)  
 > Jin, Chen & Yang  
 > KDD 2023
 
-This repository aims to implement the TransGTR framework from scratch with a clean, modular architecture while serving as a foundation for future algorithmic improvements and benchmarking.
+
+This repository implements a **TransGTR-inspired traffic forecasting framework** with a focus on:
+
+- Temporal dependency learning
+- Graph-based spatial representation
+- Multi-step traffic prediction
+- Baseline comparison experiments
+- Reproducible research workflow
+
 
 ---
 
-# Project Objective
+# 📌 Project Objective
 
-The primary goal of this repository is to:
+The objective of this project is to develop a scalable traffic forecasting framework capable of predicting future traffic conditions across multiple road network nodes.
 
-- Implement the TransGTR framework from scratch
-- Maintain a modular and scalable codebase
-- Reproduce the methodology of the original paper
-- Support reproducible experiments
-- Provide a clean foundation for developing and evaluating future traffic forecasting algorithms
+The project focuses on:
 
-Rather than directly copying an existing implementation, this project focuses on understanding the methodology and building an independent implementation with clear software engineering principles.
+- Understanding graph-based traffic forecasting methods
+- Implementing Transformer-based forecasting architecture
+- Building a modular research codebase
+- Comparing against classical forecasting approaches
+- Creating a foundation for future algorithm improvements
+
 
 ---
 
-# Repository Structure
+# 🧠 Proposed Framework
 
-```text
-Traffic-Forecasting-Research/
+The proposed framework combines:
 
-├── baseline_models/          # Baseline forecasting models
-├── proposed_model/           # Future custom algorithm
-├── datasets/                 # Dataset loading & preprocessing
-├── configs/                  # Configuration files
-├── outputs/                  # Logs, checkpoints, metrics
-├── scripts/                  # Training & utility scripts
-├── experiments/              # Experiment configurations
-├── tests/                    # Unit tests
-├── utils/                    # Shared utilities
-├── docs/                     # Documentation
+- Temporal sequence modeling
+- Graph-based traffic representation learning
+- Multi-step prediction
 
+
+The model learns from historical traffic observations:
+
+
+
+
+---
+
+# 🏗️ Repository Structure
+
+│
+├── proposed_model/
+│ ├── models/
+│ ├── data/
+│ ├── trainer/
+│ ├── evaluation/
+│ └── visualization/
+│
+├── comparison_models/
+│ ├── lstm/
+│ ├── gru/
+│ └── graph_wavenet/
+│
+├── datasets/
+├── experiments/
+├── scripts/
+├── tests/
+├── outputs/
+│
 ├── README.md
-├── ARCHITECTURE.md
-├── ROADMAP.md
+├── architecture.md
+├── roadmap.md
 ├── requirements.txt
 └── run.py
-```
+
+
+
 
 ---
 
-# Project Architecture
+# 🔄 Complete Pipeline
+Traffic Dataset
 
-The repository is organized into independent modules to keep the implementation maintainable and extensible.
+  ↓
 
-Major components include:
+Data Loader
 
-- Dataset Pipeline
-- Graph Construction
-- Node Feature Learning
-- Structure Generator
-- Forecasting Model
-- Training Pipeline
-- Evaluation Pipeline
-- Experiment Management
+  ↓
 
-Detailed design decisions are documented in:
+Sliding Window Generator
 
-```
-ARCHITECTURE.md
-```
+  ↓
 
----
+Feature Tensor Creation
 
-# TransGTR Framework Overview
+  ↓
 
-The implementation follows the methodology proposed in the original paper.
+TransGTR Model
 
-```
-Traffic Data
-      │
-      ▼
-Node Feature Network (TSFormer)
-      │
-      ▼
-Structure Generator
-      │
-      ▼
-Learned Graph
-      │
-      ▼
-Forecasting Model (Graph WaveNet)
-      │
-      ▼
-Traffic Prediction
-```
+  ↓
 
-The complete training pipeline consists of four stages:
+Prediction Head
 
-```
-Node Feature Pretraining
-          │
-          ▼
-Knowledge Distillation
-          │
-          ▼
-Joint Structure Generator +
-Forecasting Model Training
-          │
-          ▼
-Target City Fine-tuning
-```
+  ↓
+
+Evaluation Metrics
+
+  ↓
+
+Visualization
+
+
 
 ---
 
-# Current Implementation
+# 🚀 Implemented Components
 
-Current implementation includes:
 
-- TSFormer Node Feature Network
-- Graph Structure Generator
-- Graph WaveNet Forecasting Model
-- Knowledge Distillation
-- Temporal Decoupled Regularization
-- Training Pipeline
-- Evaluation Pipeline
-- Statistical Analysis
+## Dataset Pipeline
 
----
+Implemented:
 
-# File Organization
+✅ Dataset loading  
+✅ Data validation  
+✅ Missing value handling  
+✅ Sliding window generation  
+✅ Train/Validation/Test split  
+✅ PyTorch Dataset integration  
 
-| File | Location |
-|------|----------|
-| config.py | Project Root |
-| tsformer.py | prediction/ |
-| structure_generator.py | prediction/ |
-| gwn_model.py | prediction/ |
-| decoupled_regularization.py | prediction/ |
-| graph_preprocessing.py | prediction/ |
-| transgtr_data.py | prediction/ |
-| build_adjacency_matrix.py | scripts/ |
-| train_transgtr.py | scripts/ |
 
 ---
 
-# Dataset Preparation
+## Proposed Model
 
-This project uses two traffic datasets.
+Implemented:
 
-| Dataset | Purpose |
-|----------|----------|
-| location_2 | Source City (Rich Traffic Data) |
-| location_1 | Target City (Limited Traffic Data) |
+✅ Transformer-based temporal learning  
+✅ Graph-aware representation learning  
+✅ Prediction head  
+✅ Training pipeline  
+✅ Evaluation pipeline  
 
-Before training, adjacency matrices must be generated for both cities.
 
-Example:
+---
+
+## Evaluation Metrics
+
+Supported:
+
+- MAE
+- RMSE
+- MAPE
+- R² Score
+
+
+---
+
+# 📊 Baseline Comparison Models
+
+
+The framework includes:
+
+
+| Model | Status |
+|-|-|
+| LSTM | ✅ Completed |
+| GRU | ✅ Completed |
+| GraphWaveNet | ✅ Completed |
+| TransGTR | ✅ Proposed Model |
+
+
+---
+
+# ⚙️ Installation
+
+
+Clone repository:
 
 ```bash
-python scripts/build_adjacency_matrix.py \
-    --net-file maps/osm/osm.net.xml \
-    --dataset data/processed/location_2_dataset.csv \
-    --output models/location_2_adjacency.npy
+git clone https://github.com/sudhanshuranjan277/SpatioTemporal-Traffic-Forecasting-Transformer.git
 
-python scripts/build_adjacency_matrix.py \
-    --net-file maps/osm/osm.net.xml \
-    --dataset data/processed/location_1_dataset.csv \
-    --output models/location_1_adjacency.npy
-```
 
-If warnings indicate missing junctions, verify that the SUMO network (`.net.xml`) matches the dataset before proceeding.
+cd SpatioTemporal-Traffic-Forecasting-Transformer
 
----
+Install dependencies:
+pip install -r requirements.txt
 
-# Training
+Running the Project:
 
-Run the complete TransGTR training pipeline:
+Dataset Test: python -m proposed_model.data.dataset
 
-```bash
-python scripts/train_transgtr.py
-```
+Expected:TrafficDataset Test
 
-The training process performs:
+Train Samples
+Validation Samples
+Test Samples
 
-1. Node Feature Pretraining
-2. Knowledge Distillation
-3. Joint Structure Generator Training
-4. Forecasting Model Training
-5. Target Fine-tuning
-6. Evaluation
+Train Proposed Model
+python -m proposed_model.trainer.trainer
+Train Baseline Models
+python -m comparison_models.train_baselines
+Evaluation
+python -m proposed_model.evaluation.evaluate
+📈 Current Results
 
----
+TransGTR evaluation:
 
-# Output Files
-
-Training generates:
-
-```
-models/
-    transgtr_model.pth
-    transgtr_scalers.pkl
-
+Metric	Score
+MAE	8.594168
+RMSE	11.806184
+R²	0.491852
+📂 Output Files
 outputs/
-    metrics/
-        transgtr_metrics.csv
-```
 
----
+├── loss_curve.png
+├── prediction_vs_actual.png
+├── test_metrics.json
+├── test_predictions.pt
+└── baseline_results.json
+🔬 Research Direction
 
-# Configuration
+Future improvements:
 
-All configurable parameters are maintained inside:
+Complete TransGTR reproduction
+Dynamic graph learning
+Multi-city transfer learning
+Real-time traffic forecasting
+Reinforcement learning based signal optimization
+Large-scale SUMO experiments
+📚 Reference
 
-```
-config.py
-```
+Jin, Y., Chen, K., & Yang, Q.
 
-Configuration includes:
+Transferable Graph Structure Learning for Graph-based Traffic Forecasting Across Cities
 
-- Dataset settings
-- Training parameters
-- Model hyperparameters
-- Graph settings
-- TransGTR-specific parameters
+KDD 2023.
 
----
+👤 Author
 
-# Implementation Notes
+Sudhanshu Ranjan
 
-This implementation follows the original paper while introducing several practical adaptations for SUMO-generated datasets.
+Project:
 
-Current simplifications include:
+SpatioTemporal Traffic Forecasting Transformer
 
-- Smaller hidden dimensions to avoid overfitting on limited simulation data.
-- Fixed graph structure learning without Graph WaveNet adaptive adjacency.
-- Approximation of temporal features for the decoupling module.
-- Simulation-time based day-of-week encoding.
 
-These modifications improve compatibility with simulated traffic data while preserving the core methodology of TransGTR.
+This is the updated **root-level README** matching your current repository structure.
 
----
+Core TransGTR / Proposed Model
+proposed_model/
 
-# Development Philosophy
+✅ Data pipeline
+✅ Dataset loader
+✅ Sliding window generation
+✅ Transformer model
+✅ Training pipeline
+✅ Evaluation pipeline
+✅ Metrics
+✅ Visualization
 
-The repository follows these principles:
+Dataset Pipeline
+proposed_model/data/
 
-- Modular Design
-- Single Responsibility Modules
-- Reproducible Experiments
-- Config-Driven Implementation
-- Minimal Hidden Dependencies
-- Independent Components
-- Clean Documentation
+✅ dataset.py
+✅ loader.py
+✅ window.py
 
----
+Test passed:
 
-# Roadmap
+TrafficDataset Test
 
-Development progress is tracked in:
+Train Samples      : 74
+Validation Samples : 10
+Test Samples       : 22
 
-```
-ROADMAP.md
-```
+Input Shape : torch.Size([12, 9, 13])
+Target Shape: torch.Size([3, 9])
 
-Future work includes:
+✓ Dataset working correctly
+Visualization
 
-- Complete TransGTR implementation
-- Performance optimization
-- Additional benchmark experiments
-- Custom forecasting algorithm
-- Comparative evaluation against the TransGTR baseline
+Completed:
 
----
+✅ Loss curve
 
-# Documentation
+outputs/loss_curve.png
 
-Additional documentation:
+✅ Prediction vs Actual
 
-```
+outputs/prediction_vs_actual.png
+Evaluation
+
+Completed:
+
+✅ MAE
+✅ RMSE
+✅ MAPE
+✅ R²
+
+TransGTR evaluation:
+
+Metric	Value
+MAE	8.594168
+RMSE	11.806184
+R²	0.491852
+Baseline Models
+
+Structure ready:
+
+comparison_models/
+
+├── lstm/              ✅
+├── gru/               ✅
+├── graph_wavenet/     ✅
+└── train_baselines.py ⏳
+
+Models are implemented.
+
+Git
+
+Completed:
+
+✅ New repository created
+
+SpatioTemporal-Traffic-Forecasting-Transformer
+
+✅ Code pushed
+
+Documentation
+
+Root:
+
 README.md
-ARCHITECTURE.md
-ROADMAP.md
-```
 
----
+✅ Updated
 
-# Reference
+Pending:
 
-**Jin, Y., Chen, K., & Yang, Q.**
+architecture.md
+roadmap.md
 
-**Transferable Graph Structure Learning for Graph-based Traffic Forecasting Across Cities**
+and module READMEs.
 
-Proceedings of the 29th ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD 2023).
+Remaining Tasks
+1. Finish Baseline Comparison (Main Remaining Work)
 
----
+Currently:
 
-# License
+python -m comparison_models.train_baselines
 
-This repository is intended for academic research and educational purposes.
+needs final execution.
+
+We need:
+
+baseline_results.json
+
+Then final table:
+
+Model	MAE	RMSE	MAPE	R²
+LSTM				
+GRU				
+GraphWaveNet				
+TransGTR	8.59	11.80		0.49
+2. Update Documentation
+
+Need:
+
+architecture.md
+
+Will explain:
+
+System architecture
+Model flow
+Data pipeline
+Training pipeline
+roadmap.md
+
+Will explain:
+
+Completed:
+
+✓ Dataset pipeline
+✓ TransGTR implementation
+✓ Evaluation
+✓ Baselines
+
+Future:
+
+- Multi-city transfer learning
+- Real-time inference
+- RL traffic signal control
+3. Final Repository Cleanup
+
+Before final submission:
+
+Check:
+
+git status
+
+Remove:
+
+__pycache__
+*.pyc
+large checkpoints
+temporary outputs
+
+Confirm:
+
+requirements.txt
+README.md
+architecture.md
+roadmap.md
+
+are updated.
+
+Current Completion Status
+Project Setup              100% ✅
+Dataset Pipeline            100% ✅
+TransGTR Implementation     100% ✅
+Evaluation                  100% ✅
+Visualization               100% ✅
+Documentation               60% 
+Baseline Comparison          80% 
+
+
+The only technical pending item is:
+
+python -m comparison_models.train_baselines

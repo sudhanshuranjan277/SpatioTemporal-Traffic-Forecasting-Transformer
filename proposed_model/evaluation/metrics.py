@@ -10,10 +10,19 @@ Metrics:
 - R2 Score
 """
 
+
 from __future__ import annotations
+
 
 import torch
 
+
+
+
+
+# ==========================================================
+# Basic Metrics
+# ==========================================================
 
 
 def mae(
@@ -22,10 +31,16 @@ def mae(
 ):
 
     return torch.mean(
+
         torch.abs(
+
             prediction - target
+
         )
+
     )
+
+
 
 
 
@@ -35,10 +50,14 @@ def rmse(
 ):
 
     mse = torch.mean(
+
         (prediction - target) ** 2
+
     )
 
     return torch.sqrt(mse)
+
+
 
 
 
@@ -47,8 +66,10 @@ def mape(
     target: torch.Tensor,
     threshold: float = 1.0,
 ):
-    
+
+
     mask = target.abs() > threshold
+
 
 
     prediction = prediction[mask]
@@ -56,20 +77,30 @@ def mape(
     target = target[mask]
 
 
+
     if target.numel() == 0:
 
-        return torch.tensor(0.0)
+        return torch.tensor(
+            0.0
+        )
+
 
 
     return torch.mean(
+
         torch.abs(
-            (prediction-target)
+
+            (prediction - target)
+
             /
+
             target
+
         )
+
     ) * 100
 
-    
+
 
 
 
@@ -78,24 +109,105 @@ def r2_score(
     target: torch.Tensor,
 ):
 
+
     target_mean = torch.mean(
         target
     )
 
+
     ss_total = torch.sum(
+
         (target - target_mean) ** 2
+
     )
 
+
     ss_residual = torch.sum(
+
         (target - prediction) ** 2
+
     )
 
 
     return (
-        1 -
+
+        1
+
+        -
+
         ss_residual / ss_total
+
     )
 
+
+
+
+
+# ==========================================================
+# Compatibility Functions
+# Used by comparison_models/train_baselines.py
+# ==========================================================
+
+
+def calculate_mae(
+    prediction: torch.Tensor,
+    target: torch.Tensor,
+):
+
+    return mae(
+        prediction,
+        target
+    )
+
+
+
+
+
+def calculate_rmse(
+    prediction: torch.Tensor,
+    target: torch.Tensor,
+):
+
+    return rmse(
+        prediction,
+        target
+    )
+
+
+
+
+
+def calculate_mape(
+    prediction: torch.Tensor,
+    target: torch.Tensor,
+):
+
+    return mape(
+        prediction,
+        target
+    )
+
+
+
+
+
+def calculate_r2(
+    prediction: torch.Tensor,
+    target: torch.Tensor,
+):
+
+    return r2_score(
+        prediction,
+        target
+    )
+
+
+
+
+
+# ==========================================================
+# Complete Metrics
+# ==========================================================
 
 
 def calculate_metrics(
@@ -103,35 +215,63 @@ def calculate_metrics(
     target,
 ):
 
+
     return {
 
+
         "MAE":
-            mae(
+
+            calculate_mae(
+
                 prediction,
+
                 target
+
             ).item(),
+
+
 
         "RMSE":
-            rmse(
+
+            calculate_rmse(
+
                 prediction,
+
                 target
+
             ).item(),
+
+
 
         "MAPE":
-            mape(
+
+            calculate_mape(
+
                 prediction,
+
                 target
+
             ).item(),
 
+
+
         "R2":
-            r2_score(
+
+            calculate_r2(
+
                 prediction,
+
                 target
+
             ).item(),
 
     }
-    
-    # ==========================================================
+
+
+
+
+
+# ==========================================================
 # Batch Metric Evaluation
 # ==========================================================
 
@@ -140,65 +280,29 @@ def evaluate_batch(
     predictions: torch.Tensor,
     targets: torch.Tensor,
 ):
-    """
-    Calculate all metrics for one batch.
 
-    Parameters
-    ----------
-    predictions:
-        (B,H,N)
-
-    targets:
-        (B,H,N)
-
-    Returns
-    -------
-    dict
-        metric values
-    """
 
     if predictions.shape != targets.shape:
 
         raise ValueError(
+
             f"Shape mismatch: "
             f"Prediction {predictions.shape}, "
             f"Target {targets.shape}"
+
         )
 
 
-    metrics = {
 
-        "MAE":
-            mae(
-                predictions,
-                targets
-            ).item(),
+    return calculate_metrics(
 
+        predictions,
 
-        "RMSE":
-            rmse(
-                predictions,
-                targets
-            ).item(),
+        targets
+
+    )
 
 
-        "MAPE":
-            mape(
-                predictions,
-                targets
-            ).item(),
-
-
-        "R2":
-            r2_score(
-                predictions,
-                targets
-            ).item(),
-
-    }
-
-
-    return metrics
 
 
 
@@ -210,32 +314,49 @@ def evaluate_batch(
 def average_metrics(
     metric_list: list[dict],
 ):
-    """
-    Average metrics from multiple batches.
-    """
+
 
     if len(metric_list) == 0:
 
         raise ValueError(
+
             "Metric list is empty."
+
         )
+
 
 
     keys = metric_list[0].keys()
 
 
+
     averaged = {}
+
 
 
     for key in keys:
 
-        averaged[key] = sum(
-            item[key]
-            for item in metric_list
-        ) / len(metric_list)
+
+        averaged[key] = (
+
+            sum(
+
+                item[key]
+
+                for item in metric_list
+
+            )
+
+            /
+
+            len(metric_list)
+
+        )
+
 
 
     return averaged
+
 
 
 
@@ -257,24 +378,37 @@ if __name__ == "__main__":
 
 
     prediction = torch.randn(
+
         batch,
+
         horizon,
+
         nodes,
+
     )
 
 
+
     target = torch.randn(
+
         batch,
+
         horizon,
+
         nodes,
+
     )
 
 
 
     results = evaluate_batch(
+
         prediction,
+
         target,
+
     )
+
 
 
     print("=" * 60)
@@ -290,8 +424,11 @@ if __name__ == "__main__":
     for name, value in results.items():
 
         print(
+
             f"{name}: {value:.6f}"
+
         )
+
 
 
     print("=" * 60)

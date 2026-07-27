@@ -10,26 +10,6 @@ Responsibilities
 3. Split Train / Validation / Test.
 4. Convert data into tensors.
 5. Provide DataLoader compatible samples.
-
-Pipeline
---------
-
-CSV
- |
- ↓
-TrafficDataLoader
- |
- ↓
-WindowGenerator
- |
- ↓
-Feature / Target tensors
- |
- ↓
-Train / Validation / Test
- |
- ↓
-PyTorch Dataset
 """
 
 
@@ -42,34 +22,49 @@ from typing import Tuple
 import numpy as np
 import torch
 
+
 from torch.utils.data import Dataset
 
 
-from configs.config import (
+
+# ==========================================================
+# Correct Package Imports
+# ==========================================================
+
+
+from proposed_model.configs.config import (
     TRAIN_RATIO,
     VALIDATION_RATIO,
 )
 
 
-from data.loader import TrafficDataLoader
-from data.window import WindowGenerator
+from proposed_model.data.loader import (
+    TrafficDataLoader,
+)
+
+
+from proposed_model.data.window import (
+    WindowGenerator,
+)
+
 
 
 
 
 class TrafficDataset(Dataset):
     """
-    PyTorch Dataset for TransGTR.
+    PyTorch Dataset for Traffic Forecasting.
 
     Returns
     -------
 
     x:
-        (T, N, F)
+        (History, Nodes, Features)
 
     y:
-        (H, N)
+        (Prediction Horizon, Nodes)
     """
+
 
 
     VALID_SPLITS = (
@@ -83,20 +78,30 @@ class TrafficDataset(Dataset):
     )
 
 
+
     def __init__(
+
         self,
+
         split: str = "train",
+
     ):
 
+
         super().__init__()
+
 
 
         if split not in self.VALID_SPLITS:
 
             raise ValueError(
-                f"Invalid split {split}. "
+
+                f"Invalid split: {split}. "
+
                 f"Choose from {self.VALID_SPLITS}"
+
             )
+
 
 
         self.split = split
@@ -104,13 +109,14 @@ class TrafficDataset(Dataset):
 
 
         # ==================================================
-        # Load Dataset
+        # Load Data
         # ==================================================
 
         loader = TrafficDataLoader()
 
 
         dataframe = loader.load()
+
 
 
         # Remove missing values
@@ -120,80 +126,102 @@ class TrafficDataset(Dataset):
 
 
         # ==================================================
-        # Generate Sliding Windows
+        # Sliding Windows
         # ==================================================
 
         window_generator = WindowGenerator(
+
             dataframe
+
         )
 
 
+
         features, targets = (
+
             window_generator.generate()
+
         )
 
 
 
         # ==================================================
-        # Validate Data
+        # Validation
         # ==================================================
 
         if np.isnan(features).any():
 
             raise ValueError(
+
                 "NaN found in feature windows"
+
             )
 
 
         if np.isnan(targets).any():
 
             raise ValueError(
+
                 "NaN found in target windows"
+
             )
+
 
 
         if np.isinf(features).any():
 
             raise ValueError(
+
                 "Inf found in feature windows"
+
             )
 
 
         if np.isinf(targets).any():
 
             raise ValueError(
+
                 "Inf found in target windows"
+
             )
 
 
 
         # ==================================================
-        # Convert to Tensor
+        # Convert Tensor
         # ==================================================
 
         self.features = torch.tensor(
+
             features,
+
             dtype=torch.float32,
+
         )
 
 
         self.targets = torch.tensor(
+
             targets,
+
             dtype=torch.float32,
+
         )
 
 
 
         # ==================================================
-        # Split Dataset
+        # Dataset Split
         # ==================================================
 
         self._create_split()
 
 
 
+
+
     # ======================================================
-    # Train / Validation / Test Split
+    # Split Train Validation Test
     # ======================================================
 
 
@@ -201,13 +229,19 @@ class TrafficDataset(Dataset):
 
 
         total_samples = len(
+
             self.features
+
         )
+
 
 
         train_end = int(
+
             total_samples * TRAIN_RATIO
+
         )
+
 
 
         validation_end = (
@@ -217,8 +251,11 @@ class TrafficDataset(Dataset):
             +
 
             int(
+
                 total_samples *
+
                 VALIDATION_RATIO
+
             )
 
         )
@@ -229,12 +266,16 @@ class TrafficDataset(Dataset):
 
 
             self.features = (
+
                 self.features[:train_end]
+
             )
 
 
             self.targets = (
+
                 self.targets[:train_end]
+
             )
 
 
@@ -285,28 +326,39 @@ class TrafficDataset(Dataset):
 
 
 
+
+
     # ======================================================
-    # PyTorch Dataset Methods
+    # PyTorch Dataset API
     # ======================================================
 
 
-    def __len__(self) -> int:
+    def __len__(self):
 
         return len(
+
             self.features
+
         )
 
 
 
+
+
     def __getitem__(
+
         self,
+
         index: int,
+
     ) -> Tuple[torch.Tensor, torch.Tensor]:
 
 
         x = self.features[index]
 
+
         y = self.targets[index]
+
 
 
         return x, y
@@ -326,7 +378,9 @@ if __name__ == "__main__":
     print("=" * 70)
 
     print(
+
         "TrafficDataset Test"
+
     )
 
     print("=" * 70)
@@ -334,36 +388,45 @@ if __name__ == "__main__":
 
 
     train_dataset = TrafficDataset(
+
         split="train"
+
     )
 
 
     validation_dataset = TrafficDataset(
+
         split="validation"
+
     )
 
 
     test_dataset = TrafficDataset(
+
         split="test"
+
     )
 
 
 
     print(
-        f"Train Samples      : "
-        f"{len(train_dataset)}"
+
+        f"Train Samples      : {len(train_dataset)}"
+
     )
 
 
     print(
-        f"Validation Samples : "
-        f"{len(validation_dataset)}"
+
+        f"Validation Samples : {len(validation_dataset)}"
+
     )
 
 
     print(
-        f"Test Samples       : "
-        f"{len(test_dataset)}"
+
+        f"Test Samples       : {len(test_dataset)}"
+
     )
 
 
@@ -375,41 +438,42 @@ if __name__ == "__main__":
     print("-" * 70)
 
 
+
     print(
+
         "Input Shape :",
+
         x.shape
+
     )
 
 
     print(
+
         "Target Shape:",
+
         y.shape
+
     )
 
 
     print(
+
         "Input Type:",
+
         type(x)
+
     )
 
 
     print(
+
         "Target Type:",
+
         type(y)
+
     )
 
-
-
-    assert isinstance(
-        x,
-        torch.Tensor
-    )
-
-
-    assert isinstance(
-        y,
-        torch.Tensor
-    )
 
 
     assert x.ndim == 3
@@ -422,7 +486,9 @@ if __name__ == "__main__":
     print("-" * 70)
 
     print(
+
         "✓ Dataset working correctly"
+
     )
 
     print("=" * 70)
