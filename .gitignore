@@ -1,75 +1,23 @@
-# ==========================
 # Python
-# ==========================
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
 
-# Virtual Environment
-.venv/
+# Environment
+.env
 venv/
-env/
+.venv/
 
-# ==========================
-# IDE
-# ==========================
-.vscode/
-.idea/
-
-# ==========================
-# OS
-# ==========================
-.DS_Store
-Thumbs.db
-
-# ==========================
-# Logs
-# ==========================
-*.log
-logs/
-
-# ==========================
-# Python Cache
-# ==========================
-.pytest_cache/
-.mypy_cache/
-
-# ==========================
-# Build
-# ==========================
-build/
-dist/
-*.egg-info/
-
-# ==========================
-# Model Checkpoints
-# ==========================
-*.pt
+# PyTorch models
 *.pth
-*.ckpt
+*.pt
 
-# ==========================
-# Large Binary Models
-# ==========================
-*.pkl
-*.h5
-*.onnx
-
-# ==========================
-# Experiment Outputs
-# ==========================
+# Outputs
 outputs/
-runs/
-checkpoints/
-wandb/
+*.png
 
-# ==========================
+# Dataset generated files
+datasets/processed/
+datasets/raw/
+
 # Jupyter
-# ==========================
 .ipynb_checkpoints/
-
-# ==========================
-# Temporary Files
-# ==========================
-*.tmp
-*.temp
