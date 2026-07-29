@@ -25,7 +25,7 @@ env/
 
 
 # ==================================================
-# PyTorch / Model Checkpoints
+# PyTorch Checkpoints
 # ==================================================
 
 *.pth
@@ -42,7 +42,7 @@ datasets/processed/
 
 
 # ==================================================
-# Logs / Temporary Files
+# Logs
 # ==================================================
 
 *.log
@@ -51,24 +51,15 @@ logs/
 
 # ==================================================
 # Outputs
-# Ignore all generated outputs by default
 # ==================================================
 
-proposed_model/outputs/*
+# Ignore heavy model checkpoints
+proposed_model/outputs/checkpoints/
 
 
-# Keep final research results
-!proposed_model/outputs/final_results/
-!proposed_model/outputs/final_results/*
-
-
-# Keep final result images
-!proposed_model/outputs/final_results/*.png
-
-
-# Keep final tables
-!proposed_model/outputs/final_results/*.csv
-!proposed_model/outputs/final_results/*.xlsx
+# Ignore baseline generated outputs
+comparison_models/*/outputs/
+comparison_models/*/outputs/**
 
 
 # ==================================================
@@ -85,9 +76,3 @@ Thumbs.db
 
 .vscode/
 .idea/
-# ==================================================
-# Baseline Model Outputs
-# ==================================================
-
-comparison_models/*/outputs/
-comparison_models/*/outputs/**
