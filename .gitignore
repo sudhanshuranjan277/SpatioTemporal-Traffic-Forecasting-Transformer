@@ -85,3 +85,9 @@ Thumbs.db
 
 .vscode/
 .idea/
+# ==================================================
+# Baseline Model Outputs
+# ==================================================
+
+comparison_models/*/outputs/
+comparison_models/*/outputs/**
