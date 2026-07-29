@@ -1,23 +1,87 @@
+# ==================================================
 # Python
-__pycache__/
-*.pyc
+# ==================================================
 
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# ==================================================
 # Environment
+# ==================================================
+
 .env
 venv/
 .venv/
+env/
 
-# PyTorch models
+
+# ==================================================
+# Jupyter
+# ==================================================
+
+.ipynb_checkpoints/
+
+
+# ==================================================
+# PyTorch / Model Checkpoints
+# ==================================================
+
 *.pth
 *.pt
+*.ckpt
 
-# Outputs
-outputs/
-*.png
 
-# Dataset generated files
-datasets/processed/
+# ==================================================
+# Dataset Files
+# ==================================================
+
 datasets/raw/
+datasets/processed/
 
-# Jupyter
-.ipynb_checkpoints/
+
+# ==================================================
+# Logs / Temporary Files
+# ==================================================
+
+*.log
+logs/
+
+
+# ==================================================
+# Outputs
+# Ignore all generated outputs by default
+# ==================================================
+
+proposed_model/outputs/*
+
+
+# Keep final research results
+!proposed_model/outputs/final_results/
+!proposed_model/outputs/final_results/*
+
+
+# Keep final result images
+!proposed_model/outputs/final_results/*.png
+
+
+# Keep final tables
+!proposed_model/outputs/final_results/*.csv
+!proposed_model/outputs/final_results/*.xlsx
+
+
+# ==================================================
+# OS Files
+# ==================================================
+
+.DS_Store
+Thumbs.db
+
+
+# ==================================================
+# IDE
+# ==================================================
+
+.vscode/
+.idea/
