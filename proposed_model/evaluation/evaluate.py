@@ -1,430 +1,457 @@
 """
-evaluation/evaluate.py
+Evaluation Dataset
 
-Model Evaluation Pipeline
+Testing Dataset Pipeline
 
-Flow
-----
+Uses:
+    location_1 + location_2
 
-Best Checkpoint
-        |
-        ↓
-Load TransGTR
-        |
-        ↓
-Test Dataset
-        |
-        ↓
-Prediction
-        |
-        ↓
-Metrics
-        |
-        ↓
-Save Results
+Total Nodes:
+    9
+
+
+Supports Forecast Horizon:
+
+    3
+    5
+    10
+
+
+Output:
+
+X:
+(history, nodes, features)
+
+Y:
+(horizon, nodes)
+
 """
 
 
 from __future__ import annotations
 
 
-import json
-
-from pathlib import Path
-
-
+import numpy as np
 import torch
 
-from torch.utils.data import DataLoader
+
+from torch.utils.data import Dataset
 
 
 
-from configs.config import (
-    BATCH_SIZE,
-    DEVICE,
-    CHECKPOINT_DIR,
-    OUTPUT_DIR,
-)
+from proposed_model.data.loader import TrafficDataLoader
 
 
-from data.dataset import TrafficDataset
+from proposed_model.configs.config import (
 
+    FEATURE_COLUMNS,
 
-from models.transgtr import TransGTR
+    TARGET_COLUMN
 
-
-from evaluation.metrics import (
-    evaluate_batch,
-    average_metrics,
 )
 
 
 
 
 
-# ==========================================================
-# Device
-# ==========================================================
 
+class EvaluationDataset(Dataset):
 
-device = DEVICE
 
+    def __init__(
 
+            self,
 
+            horizon=5,
 
+            history=12
 
-# ==========================================================
-# Load Test Dataset
-# ==========================================================
+    ):
 
 
-def create_test_loader():
+        super().__init__()
 
-    test_dataset = TrafficDataset(
-        split="test"
-    )
 
 
-    test_loader = DataLoader(
+        self.horizon = horizon
 
-        dataset=test_dataset,
+        self.history = history
 
-        batch_size=BATCH_SIZE,
 
-        shuffle=False,
 
-        drop_last=False,
 
-        num_workers=0,
 
-    )
+        # ==================================================
+        # Load Combined Dataset
+        # ==================================================
 
 
-    return test_loader
+        loader = TrafficDataLoader()
 
-# ==========================================================
-# Model Loading
-# ==========================================================
 
 
-def load_model():
+        dataframe = loader.load()
 
-    model = TransGTR()
 
-    model = model.to(
-        device
-    )
 
+        dataframe = dataframe.fillna(0)
 
-    checkpoint_path = (
-        CHECKPOINT_DIR
-        /
-        "best_model.pth"
-    )
 
 
-    if not checkpoint_path.exists():
 
-        raise FileNotFoundError(
-            f"Checkpoint not found: {checkpoint_path}"
-        )
 
 
-    checkpoint = torch.load(
-        checkpoint_path,
-        map_location=device,
-    )
+        # ==================================================
+        # Create Windows
+        # ==================================================
 
 
-    model.load_state_dict(
-        checkpoint["model_state_dict"]
-    )
+        X,Y = self.create_windows(
 
+            dataframe
 
-    model.eval()
-
-
-    print("=" * 70)
-
-    print(
-        "Model Loaded Successfully"
-    )
-
-    print(
-        f"Checkpoint : {checkpoint_path}"
-    )
-
-    print(
-        f"Epoch      : {checkpoint['epoch']}"
-    )
-
-    print(
-        f"Loss       : {checkpoint['loss']}"
-    )
-
-    print("=" * 70)
-
-
-    return model
-
-
-
-
-
-# ==========================================================
-# Evaluation
-# ==========================================================
-
-
-@torch.no_grad()
-def evaluate_model(
-    model,
-    test_loader,
-):
-
-    metric_results = []
-
-
-    all_predictions = []
-
-    all_targets = []
-
-
-
-    for batch in test_loader:
-
-
-        x, y = batch
-
-
-        x = x.to(
-            device
-        )
-
-
-        y = y.to(
-            device
         )
 
 
 
-        prediction = model(x)
+        self.X = torch.tensor(
 
+            X,
 
-
-        batch_metrics = evaluate_batch(
-
-            prediction,
-
-            y,
+            dtype=torch.float32
 
         )
 
 
-        metric_results.append(
-            batch_metrics
-        )
+        self.Y = torch.tensor(
 
+            Y,
 
-        all_predictions.append(
-            prediction.cpu()
-        )
+            dtype=torch.float32
 
-
-        all_targets.append(
-            y.cpu()
         )
 
 
 
-    final_metrics = average_metrics(
-        metric_results
-    )
 
 
-    predictions = torch.cat(
-        all_predictions,
-        dim=0,
-    )
 
 
-    targets = torch.cat(
-        all_targets,
-        dim=0,
-    )
+    # ======================================================
+    # Window Generator
+    # ======================================================
 
 
+    def create_windows(
 
-    return (
-        final_metrics,
-        predictions,
-        targets,
-    )
-    
-    # ==========================================================
-# Save Results
-# ==========================================================
+            self,
 
+            dataframe
 
-def save_results(
-    metrics,
-    predictions,
-    targets,
-):
+    ):
 
-    OUTPUT_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
 
 
-    # -------------------------------
-    # Save Metrics
-    # -------------------------------
+        X = []
 
-    metrics_path = (
-        OUTPUT_DIR
-        /
-        "test_metrics.json"
-    )
+        Y = []
 
 
-    with open(
-        metrics_path,
-        "w",
-    ) as file:
 
-        json.dump(
-            metrics,
-            file,
-            indent=4,
-        )
+        nodes = sorted(
 
+            dataframe["junction_id"].unique()
 
-    # -------------------------------
-    # Save Predictions
-    # -------------------------------
-
-    prediction_path = (
-        OUTPUT_DIR
-        /
-        "test_predictions.pt"
-    )
-
-
-    torch.save(
-
-        {
-            "predictions":
-                predictions,
-
-            "targets":
-                targets,
-
-        },
-
-        prediction_path,
-
-    )
-
-
-    print("=" * 70)
-
-    print(
-        "Evaluation Results Saved"
-    )
-
-    print(
-        f"Metrics      : {metrics_path}"
-    )
-
-    print(
-        f"Predictions  : {prediction_path}"
-    )
-
-    print("=" * 70)
-
-
-
-
-
-# ==========================================================
-# Main
-# ==========================================================
-
-
-def main():
-
-
-    print("=" * 70)
-
-    print(
-        "TransGTR Evaluation"
-    )
-
-    print("=" * 70)
-
-
-
-    test_loader = create_test_loader()
-
-
-
-    model = load_model()
-
-
-
-    metrics, predictions, targets = evaluate_model(
-
-        model,
-
-        test_loader,
-
-    )
-
-
-
-    print()
-
-    print("=" * 70)
-
-    print(
-        "Test Metrics"
-    )
-
-    print("=" * 70)
-
-
-
-    for name, value in metrics.items():
-
-        print(
-            f"{name}: {value:.6f}"
         )
 
 
 
-    print("=" * 70)
+        feature_data = []
+
+        target_data = []
 
 
 
-    save_results(
 
-        metrics,
 
-        predictions,
-
-        targets,
-
-    )
+        for node in nodes:
 
 
 
+            node_df = dataframe[
+
+                dataframe["junction_id"] == node
+
+            ]
+
+
+
+            node_df = node_df.sort_values(
+
+                "simulation_time"
+
+            )
+
+
+
+            feature_data.append(
+
+                node_df[FEATURE_COLUMNS].values
+
+            )
+
+
+
+            target_data.append(
+
+                node_df[TARGET_COLUMN].values
+
+            )
+
+
+
+
+
+
+        feature_data = np.array(
+
+            feature_data
+
+        )
+
+
+
+        target_data = np.array(
+
+            target_data
+
+        )
+
+
+
+        total_steps = feature_data.shape[1]
+
+
+
+
+
+
+        for i in range(
+
+            total_steps
+
+            -
+
+            self.history
+
+            -
+
+            self.horizon
+
+        ):
+
+
+
+            # -------------------------
+            # Input
+            # -------------------------
+
+
+            x = feature_data[
+
+                :,
+
+                i:i+self.history,
+
+                :
+
+            ]
+
+
+
+            # nodes,history,features
+
+            x = np.transpose(
+
+                x,
+
+                (1,0,2)
+
+            )
+
+
+
+
+
+            # -------------------------
+            # Target
+            # -------------------------
+
+
+            y = target_data[
+
+                :,
+
+                i+self.history:
+
+                i+self.history+self.horizon
+
+            ]
+
+
+
+            # nodes,horizon
+
+            y = np.transpose(
+
+                y,
+
+                (1,0)
+
+            )
+
+
+
+            X.append(
+
+                x
+
+            )
+
+
+            Y.append(
+
+                y
+
+            )
+
+
+
+
+        return (
+
+            np.array(X),
+
+            np.array(Y)
+
+        )
+
+
+
+
+
+
+
+    # ======================================================
+    # Dataset API
+    # ======================================================
+
+
+    def __len__(self):
+
+
+        return len(
+
+            self.X
+
+        )
+
+
+
+
+
+    def __getitem__(
+
+            self,
+
+            index
+
+    ):
+
+
+        return (
+
+            self.X[index],
+
+            self.Y[index]
+
+        )
+
+
+
+
+
+
+
+# ======================================================
+# Test
+# ======================================================
 
 
 if __name__ == "__main__":
 
-    main()
-    
-    
-    
+
+    print("="*70)
+
+    print(
+
+        "Combined Evaluation Dataset Test"
+
+    )
+
+    print("="*70)
+
+
+
+
+    for h in [3,5,10]:
+
+
+        dataset = EvaluationDataset(
+
+            horizon=h
+
+        )
+
+
+        x,y = dataset[0]
+
+
+
+        print()
+
+        print(
+
+            f"Horizon: {h}"
+
+        )
+
+
+        print(
+
+            "Samples:",
+
+            len(dataset)
+
+        )
+
+
+        print(
+
+            "Input:",
+
+            x.shape
+
+        )
+
+
+        print(
+
+            "Target:",
+
+            y.shape
+
+        )
+
+
+    print("="*70)

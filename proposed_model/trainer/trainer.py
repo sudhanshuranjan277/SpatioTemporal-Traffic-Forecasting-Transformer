@@ -40,8 +40,8 @@ from torch.utils.data import DataLoader
 # Project Imports
 # ==========================================================
 
-
-from configs.config import (
+import proposed_model
+from proposed_model.configs.config import (
 
     BATCH_SIZE,
 
@@ -56,27 +56,16 @@ from configs.config import (
     RANDOM_SEED,
 
     CHECKPOINT_DIR,
+    TRANSGTR_CHECKPOINT_DIR,
+    
 
 )
+from proposed_model.data.dataset import TrafficDataset
+from proposed_model.models.transgtr import TransGTR
 
-
-from data.dataset import TrafficDataset
-
-
-from models.transgtr import TransGTR
-
-
-
-
-
-# ==========================================================
 # Device
-# ==========================================================
-
 
 device = DEVICE
-
-
 
 # ==========================================================
 # Reproducibility
@@ -258,7 +247,8 @@ def save_checkpoint(
 
 
     checkpoint_path = (
-        CHECKPOINT_DIR / filename
+        TRANSGTR_CHECKPOINT_DIR  / 
+        filename
     )
 
 
@@ -775,16 +765,16 @@ def fit():
 
     import json
 
-    from configs.config import OUTPUT_DIR
+    from proposed_model.configs.config import METRIC_DIR
 
 
-    OUTPUT_DIR.mkdir(
+    METRIC_DIR.mkdir(
         parents=True,
         exist_ok=True
     )
 
 
-    history_path = OUTPUT_DIR / "training_history.json"
+    history_path = METRIC_DIR / "training_history.json"
 
 
     with open(history_path, "w") as file:

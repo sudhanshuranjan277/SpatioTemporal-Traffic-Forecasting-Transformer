@@ -39,7 +39,7 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
-from configs.config import (
+from proposed_model.configs.config import  (
     EMBEDDING_DIM,
     NUM_HEADS,
     NUM_LAYERS,
@@ -50,11 +50,11 @@ from configs.config import (
     PREDICTION_HORIZON,
 )
 
-from models.embedding import TrafficEmbedding
-from models.tsformer import TSFormer
-from models.structure_generator import DynamicGraphGenerator
-from models.graph_wavenet import GraphWaveNet
-from models.prediction_head import PredictionHead
+from proposed_model.models.tsformer import TSFormer
+from proposed_model.models.graph_wavenet import GraphWaveNet
+from proposed_model.models.structure_generator import DynamicGraphGenerator
+from proposed_model.models.prediction_head import PredictionHead
+from proposed_model.models.embedding import TrafficEmbedding
 
 
 class TransGTR(nn.Module):

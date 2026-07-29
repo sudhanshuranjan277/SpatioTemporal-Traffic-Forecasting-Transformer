@@ -25,22 +25,135 @@ DATA_ROOT = PROJECT_ROOT.parent / "datasets"
 RAW_DATA_DIR = DATA_ROOT / "raw"
 PROCESSED_DATA_DIR = DATA_ROOT / "processed"
 
-CHECKPOINT_DIR = PROJECT_ROOT / "checkpoints"
+
+# =============================================================================
+# Output Directories
+# =============================================================================
+
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
-LOG_DIR = PROJECT_ROOT / "logs"
+
+
+CHECKPOINT_DIR = (
+    OUTPUT_DIR
+    /
+    "checkpoints"
+)
+
+
+LOG_DIR = (
+    OUTPUT_DIR
+    /
+    "logs"
+)
+
+
+# =============================================================================
+# Model Checkpoint Directories
+# =============================================================================
+
+TRANSGTR_CHECKPOINT_DIR = (
+    CHECKPOINT_DIR
+    /
+    "transgtr"
+)
+
+
+BASELINE_CHECKPOINT_DIR = (
+    CHECKPOINT_DIR
+    /
+    "baselines"
+)
+
+
+
+# =============================================================================
+# Result Directories
+# =============================================================================
+
+METRIC_DIR = (
+    OUTPUT_DIR
+    /
+    "metrics"
+)
+
+
+PREDICTION_DIR = (
+    OUTPUT_DIR
+    /
+    "predictions"
+)
+
+
+GRAPH_DIR = (
+    OUTPUT_DIR
+    /
+    "graphs"
+)
+
+
+REPORT_DIR = (
+    OUTPUT_DIR
+    /
+    "reports"
+)
+
+
+TRAFFIC_METRIC_DIR = (
+    OUTPUT_DIR
+    /
+    "traffic_metrics"
+)
+
+
+
+# =============================================================================
+# Experiment Output Directories
+# =============================================================================
+
+COMPARISON_OUTPUT_DIR = (
+    OUTPUT_DIR
+    /
+    "comparison"
+)
+
+
+HORIZON_3_DIR = (
+    COMPARISON_OUTPUT_DIR
+    /
+    "horizon_3min"
+)
+
+
+HORIZON_5_DIR = (
+    COMPARISON_OUTPUT_DIR
+    /
+    "horizon_5min"
+)
+
+
+HORIZON_10_DIR = (
+    COMPARISON_OUTPUT_DIR
+    /
+    "horizon_10min"
+)
+
 
 
 # =============================================================================
 # Dataset
 # =============================================================================
 
-DATASET_FILES = sorted(PROCESSED_DATA_DIR.glob("*.csv"))
+DATASET_FILES = sorted(
+    PROCESSED_DATA_DIR.glob("*.csv")
+)
+
 
 TIMESTAMP_COLUMN = "simulation_time"
 
 LOCATION_COLUMN = "location_id"
 
 NODE_COLUMN = "junction_id"
+
 
 
 # =============================================================================
@@ -50,31 +163,60 @@ NODE_COLUMN = "junction_id"
 FEATURE_COLUMNS = [
 
     "vehicle_count",
+
     "traffic_flow",
+
     "arrival_rate",
+
     "departure_rate",
+
     "traffic_event_type",
+
     "remaining_green_time",
+
     "current_signal_phase",
+
     "downstream_occupancy",
+
     "downstream_queue_length",
+
     "average_speed",
+
     "waiting_time",
+
     "travel_time",
+
     "queue_length",
 
 ]
 
-TARGET_COLUMN = "traffic_flow"
 
+TARGET_COLUMN = "traffic_flow"
 
 # =============================================================================
 # Window Configuration
 # =============================================================================
+# Historical observation window
+# Example:
+# Last 12 minutes traffic data is used for prediction
 
 HISTORY_LENGTH = 12
 
-PREDICTION_HORIZON = 3
+
+# Multi-step forecasting experiments
+
+FORECAST_HORIZONS = [
+    3,      # 3 minutes ahead
+    5,      # 5 minutes ahead
+    10      # 10 minutes ahead
+]
+
+
+# Default horizon
+# Used by normal training/testing
+
+PREDICTION_HORIZON = 5
+
 
 SLIDING_WINDOW_STRIDE = 1
 
@@ -197,7 +339,7 @@ def show_config() -> None:
     print(f"Datasets Found    : {len(DATASET_FILES)}")
 
     print(f"History Length    : {HISTORY_LENGTH}")
-    print(f"Prediction Horizon: {PREDICTION_HORIZON}")
+    print(f"Prediction Horizon: {FORECAST_HORIZON}")
 
     print(f"Target Column     : {TARGET_COLUMN}")
 

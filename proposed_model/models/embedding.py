@@ -33,7 +33,7 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
-from configs.config import (
+from proposed_model.configs.config import  (
     EMBEDDING_DIM,
     NUM_INPUT_FEATURES,
 )

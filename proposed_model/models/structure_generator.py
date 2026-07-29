@@ -23,8 +23,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from configs.config import EMBEDDING_DIM
-
+from proposed_model.configs.config import EMBEDDING_DIM
 
 class DynamicGraphGenerator(nn.Module):
     """
