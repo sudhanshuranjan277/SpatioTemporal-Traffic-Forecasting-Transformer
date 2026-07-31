@@ -1,19 +1,21 @@
 """
-Graph WaveNet Training
+Transformer Training Module
 
-Supports:
+Traffic Forecasting
+
+Input:
+Previous traffic observations
+
+Output:
+Future traffic flow prediction
+
+
+Horizons:
 
 3 min
 5 min
 8 min
 
-Output:
-
-outputs/
-    checkpoints/
-    GraphWaveNet_*min.pth
-
-    GraphWaveNet_*min_history.json
 """
 
 
@@ -30,25 +32,43 @@ from torch.utils.data import DataLoader
 
 
 
-from proposed_model.configs.config import (
-
-    DEVICE,
-
-    BATCH_SIZE,
-
-    NUM_EPOCHS,
-
-    LEARNING_RATE,
-
-)
-
+from comparison_models.transformer.model import TrafficTransformer
 
 
 from proposed_model.data.dataset import TrafficDataset
 
 
 
-from comparison_models.graph_wavenet.model import GraphWaveNet
+# ======================================================
+# Device
+# ======================================================
+
+
+DEVICE = (
+
+    torch.device("cuda")
+
+    if torch.cuda.is_available()
+
+    else torch.device("cpu")
+
+)
+
+
+
+
+
+# ======================================================
+# Hyperparameters
+# ======================================================
+
+
+BATCH_SIZE = 16
+
+EPOCHS = 50
+
+LEARNING_RATE = 0.001
+
 
 
 
@@ -65,13 +85,30 @@ CURRENT_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = CURRENT_DIR / "outputs"
 
 
-CHECKPOINT_DIR = (
+CHECKPOINT_DIR = OUTPUT_DIR / "checkpoints"
 
-    OUTPUT_DIR /
+HISTORY_DIR = OUTPUT_DIR / "history"
 
-    "checkpoints"
+
+
+CHECKPOINT_DIR.mkdir(
+
+    parents=True,
+
+    exist_ok=True
 
 )
+
+
+HISTORY_DIR.mkdir(
+
+    parents=True,
+
+    exist_ok=True
+
+)
+
+
 
 
 
@@ -89,7 +126,7 @@ def train(horizon):
 
     print(
 
-        f"Graph WaveNet Training | Horizon {horizon} min"
+        f"Transformer Training | Horizon {horizon} min"
 
     )
 
@@ -98,30 +135,10 @@ def train(horizon):
 
 
 
-
-    checkpoint_path = (
-
-        CHECKPOINT_DIR /
-
-        f"GraphWaveNet_{horizon}min.pth"
-
-    )
-
-
-
-    history_path = (
-
-        OUTPUT_DIR /
-
-        f"GraphWaveNet_{horizon}min_history.json"
-
-    )
-
-
-
-
-
+    # -----------------------------
     # Dataset
+    # -----------------------------
+
 
     train_dataset = TrafficDataset(
 
@@ -171,20 +188,14 @@ def train(horizon):
 
 
 
-    # Detect nodes
-
-    sample_x, _ = train_dataset[0]
 
 
-    num_nodes = sample_x.shape[1]
+    # -----------------------------
+    # Model
+    # -----------------------------
 
 
-
-
-
-    model = GraphWaveNet(
-
-        num_nodes=num_nodes,
+    model = TrafficTransformer(
 
         horizon=horizon
 
@@ -193,6 +204,7 @@ def train(horizon):
 
 
     model.to(DEVICE)
+
 
 
 
@@ -222,11 +234,9 @@ def train(horizon):
 
     history = {
 
-
         "train_loss": [],
 
-
-        "val_loss": []
+        "validation_loss": []
 
     }
 
@@ -236,7 +246,12 @@ def train(horizon):
 
 
 
-    for epoch in range(NUM_EPOCHS):
+    # ==================================================
+    # Epoch Loop
+    # ==================================================
+
+
+    for epoch in range(EPOCHS):
 
 
         start = time.time()
@@ -246,8 +261,8 @@ def train(horizon):
         model.train()
 
 
-        train_loss = 0
 
+        train_loss = 0
 
 
 
@@ -259,7 +274,6 @@ def train(horizon):
             x = x.to(DEVICE)
 
             y = y.to(DEVICE)
-
 
 
 
@@ -279,8 +293,6 @@ def train(horizon):
                 y
 
             )
-
-
 
 
 
@@ -306,14 +318,16 @@ def train(horizon):
 
 
 
+        # -----------------------------
         # Validation
+        # -----------------------------
 
 
         model.eval()
 
 
-        val_loss = 0
 
+        val_loss = 0
 
 
 
@@ -366,7 +380,7 @@ def train(horizon):
         )
 
 
-        history["val_loss"].append(
+        history["validation_loss"].append(
 
             val_loss
 
@@ -377,14 +391,13 @@ def train(horizon):
 
 
 
-
         print(
 
-            f"Epoch [{epoch+1}/{NUM_EPOCHS}] "
+            f"Epoch [{epoch+1}/{EPOCHS}] "
 
-            f"Train: {train_loss:.4f} "
+            f"Train Loss: {train_loss:.6f} "
 
-            f"Val: {val_loss:.4f} "
+            f"Val Loss: {val_loss:.6f} "
 
             f"Time: {time.time()-start:.2f}s"
 
@@ -396,6 +409,11 @@ def train(horizon):
 
 
 
+        # -----------------------------
+        # Save Best Model
+        # -----------------------------
+
+
         if val_loss < best_loss:
 
 
@@ -404,15 +422,15 @@ def train(horizon):
 
 
 
-            CHECKPOINT_DIR.mkdir(
+            checkpoint = (
 
-                parents=True,
+                CHECKPOINT_DIR
 
-                exist_ok=True
+                /
+
+                f"Transformer_{horizon}min.pth"
 
             )
-
-
 
 
 
@@ -420,19 +438,19 @@ def train(horizon):
 
                 {
 
-                    "epoch": epoch+1,
+                    "epoch":epoch+1,
 
-                    "loss": best_loss,
-
-                    "horizon": horizon,
+                    "horizon":horizon,
 
                     "model_state_dict":
 
-                        model.state_dict()
+                        model.state_dict(),
+
+                    "loss":best_loss
 
                 },
 
-                checkpoint_path
+                checkpoint
 
             )
 
@@ -440,7 +458,7 @@ def train(horizon):
 
             print(
 
-                "✓ Graph WaveNet checkpoint saved"
+                "✓ Checkpoint Saved"
 
             )
 
@@ -450,21 +468,29 @@ def train(horizon):
 
 
 
-    OUTPUT_DIR.mkdir(
 
-        parents=True,
 
-        exist_ok=True
+    # -----------------------------
+    # Save History
+    # -----------------------------
+
+
+    history_file = (
+
+        HISTORY_DIR
+
+        /
+
+        f"Transformer_{horizon}min_history.json"
 
     )
 
 
 
 
-
     with open(
 
-        history_path,
+        history_file,
 
         "w"
 
@@ -487,31 +513,29 @@ def train(horizon):
 
 
 
+    print()
+
     print("="*70)
 
     print(
 
-        f"Graph WaveNet {horizon} min Training Completed"
+        f"Transformer {horizon} min Training Completed"
 
     )
-
 
 
     print(
 
         "Checkpoint:",
 
-        checkpoint_path
+        CHECKPOINT_DIR /
+
+        f"Transformer_{horizon}min.pth"
 
     )
 
 
     print("="*70)
-
-
-
-    return checkpoint_path
-
 
 
 
@@ -519,7 +543,7 @@ def train(horizon):
 
 
 # ======================================================
-# Direct Run
+# Main
 # ======================================================
 
 

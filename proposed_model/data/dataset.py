@@ -3,13 +3,20 @@ data/dataset.py
 
 PyTorch Dataset for Traffic Forecasting
 
-Responsibilities
-----------------
-1. Load processed traffic data.
-2. Generate sliding windows.
-3. Split Train / Validation / Test.
-4. Convert data into tensors.
-5. Provide DataLoader compatible samples.
+Supports Dynamic Forecast Horizon
+
+Example:
+
+TrafficDataset(
+    split="train",
+    horizon=3
+)
+
+TrafficDataset(
+    split="train",
+    horizon=8
+)
+
 """
 
 
@@ -25,11 +32,6 @@ import torch
 
 from torch.utils.data import Dataset
 
-
-
-# ==========================================================
-# Correct Package Imports
-# ==========================================================
 
 
 from proposed_model.configs.config import (
@@ -52,19 +54,6 @@ from proposed_model.data.window import (
 
 
 class TrafficDataset(Dataset):
-    """
-    PyTorch Dataset for Traffic Forecasting.
-
-    Returns
-    -------
-
-    x:
-        (History, Nodes, Features)
-
-    y:
-        (Prediction Horizon, Nodes)
-    """
-
 
 
     VALID_SPLITS = (
@@ -85,6 +74,8 @@ class TrafficDataset(Dataset):
 
         split: str = "train",
 
+        horizon=None,
+
     ):
 
 
@@ -94,11 +85,10 @@ class TrafficDataset(Dataset):
 
         if split not in self.VALID_SPLITS:
 
+
             raise ValueError(
 
-                f"Invalid split: {split}. "
-
-                f"Choose from {self.VALID_SPLITS}"
+                f"Invalid split: {split}"
 
             )
 
@@ -107,31 +97,41 @@ class TrafficDataset(Dataset):
         self.split = split
 
 
+        self.horizon = horizon
+
+
+
+
 
         # ==================================================
         # Load Data
         # ==================================================
 
+
         loader = TrafficDataLoader()
+
 
 
         dataframe = loader.load()
 
 
 
-        # Remove missing values
-
         dataframe = dataframe.fillna(0)
 
 
 
+
+
         # ==================================================
-        # Sliding Windows
+        # Dynamic Sliding Window
         # ==================================================
+
 
         window_generator = WindowGenerator(
 
-            dataframe
+            dataframe,
+
+            horizon=self.horizon
 
         )
 
@@ -145,24 +145,28 @@ class TrafficDataset(Dataset):
 
 
 
+
+
         # ==================================================
         # Validation
         # ==================================================
+
 
         if np.isnan(features).any():
 
             raise ValueError(
 
-                "NaN found in feature windows"
+                "NaN found in features"
 
             )
+
 
 
         if np.isnan(targets).any():
 
             raise ValueError(
 
-                "NaN found in target windows"
+                "NaN found in targets"
 
             )
 
@@ -172,47 +176,54 @@ class TrafficDataset(Dataset):
 
             raise ValueError(
 
-                "Inf found in feature windows"
+                "Inf found in features"
 
             )
+
 
 
         if np.isinf(targets).any():
 
             raise ValueError(
 
-                "Inf found in target windows"
+                "Inf found in targets"
 
             )
 
 
 
+
+
         # ==================================================
-        # Convert Tensor
+        # Tensor Conversion
         # ==================================================
+
 
         self.features = torch.tensor(
 
             features,
 
-            dtype=torch.float32,
+            dtype=torch.float32
 
         )
+
 
 
         self.targets = torch.tensor(
 
             targets,
 
-            dtype=torch.float32,
+            dtype=torch.float32
 
         )
 
 
 
+
         # ==================================================
-        # Dataset Split
+        # Split
         # ==================================================
+
 
         self._create_split()
 
@@ -220,8 +231,9 @@ class TrafficDataset(Dataset):
 
 
 
+
     # ======================================================
-    # Split Train Validation Test
+    # Dataset Split
     # ======================================================
 
 
@@ -238,7 +250,9 @@ class TrafficDataset(Dataset):
 
         train_end = int(
 
-            total_samples * TRAIN_RATIO
+            total_samples *
+
+            TRAIN_RATIO
 
         )
 
@@ -262,21 +276,13 @@ class TrafficDataset(Dataset):
 
 
 
+
         if self.split == "train":
 
 
-            self.features = (
+            self.features = self.features[:train_end]
 
-                self.features[:train_end]
-
-            )
-
-
-            self.targets = (
-
-                self.targets[:train_end]
-
-            )
+            self.targets = self.targets[:train_end]
 
 
 
@@ -328,12 +334,15 @@ class TrafficDataset(Dataset):
 
 
 
+
+
     # ======================================================
-    # PyTorch Dataset API
+    # PyTorch API
     # ======================================================
 
 
     def __len__(self):
+
 
         return len(
 
@@ -349,146 +358,81 @@ class TrafficDataset(Dataset):
 
         self,
 
-        index: int,
+        index: int
 
     ) -> Tuple[torch.Tensor, torch.Tensor]:
 
 
-        x = self.features[index]
+        return (
 
+            self.features[index],
 
-        y = self.targets[index]
+            self.targets[index]
 
+        )
 
-
-        return x, y
 
 
 
 
 
 # ==========================================================
-# Unit Test
+# Test
 # ==========================================================
 
 
 if __name__ == "__main__":
 
 
-    print("=" * 70)
+    print("="*70)
 
     print(
-
-        "TrafficDataset Test"
-
+        "Dynamic Traffic Dataset Test"
     )
 
-    print("=" * 70)
+    print("="*70)
 
 
 
-    train_dataset = TrafficDataset(
+    for h in [3,5,8]:
 
-        split="train"
 
-    )
+        dataset = TrafficDataset(
 
+            split="train",
 
-    validation_dataset = TrafficDataset(
+            horizon=h
 
-        split="validation"
+        )
 
-    )
 
+        x,y = dataset[0]
 
-    test_dataset = TrafficDataset(
 
-        split="test"
 
-    )
+        print()
 
+        print(
+            f"Horizon : {h}"
+        )
 
 
-    print(
+        print(
 
-        f"Train Samples      : {len(train_dataset)}"
+            "Input:",
 
-    )
+            x.shape
 
+        )
 
-    print(
 
-        f"Validation Samples : {len(validation_dataset)}"
+        print(
 
-    )
+            "Target:",
 
+            y.shape
 
-    print(
+        )
 
-        f"Test Samples       : {len(test_dataset)}"
 
-    )
-
-
-
-    x, y = train_dataset[0]
-
-
-
-    print("-" * 70)
-
-
-
-    print(
-
-        "Input Shape :",
-
-        x.shape
-
-    )
-
-
-    print(
-
-        "Target Shape:",
-
-        y.shape
-
-    )
-
-
-    print(
-
-        "Input Type:",
-
-        type(x)
-
-    )
-
-
-    print(
-
-        "Target Type:",
-
-        type(y)
-
-    )
-
-
-
-    assert x.ndim == 3
-
-
-    assert y.ndim == 2
-
-
-
-    print("-" * 70)
-
-    print(
-
-        "✓ Dataset working correctly"
-
-    )
-
-    print("=" * 70)
+    print("="*70)

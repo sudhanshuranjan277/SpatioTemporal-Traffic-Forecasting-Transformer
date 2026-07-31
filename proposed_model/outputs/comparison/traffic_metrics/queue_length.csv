@@ -1,4 +1,4 @@
-Remove-Item -Recurse -Force proposed_model\scripts\trainersimulation_time,location_id,junction_id,queue_length,downstream_queue_length
+simulation_time,location_id,junction_id,queue_length,downstream_queue_length
 0,location_1,K1,5.0,3.802969003875036
 1,location_1,K1,2.0831160985396044,12.904799807791086
 2,location_1,K1,0.0,13.446788586617956

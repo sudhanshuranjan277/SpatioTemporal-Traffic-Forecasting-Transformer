@@ -1,14 +1,10 @@
 """
 GRU Baseline Training
 
-Output:
-
-comparison_models/gru/outputs/
-
-    checkpoints/
-        GRU_best.pth
-
-    training_history.json
+Supports:
+3 min
+5 min
+8 min forecast horizons
 """
 
 
@@ -20,7 +16,9 @@ import time
 import torch
 import torch.nn as nn
 
+
 from torch.utils.data import DataLoader
+
 
 
 from proposed_model.configs.config import (
@@ -31,10 +29,18 @@ from proposed_model.configs.config import (
 )
 
 
-from proposed_model.data.dataset import TrafficDataset
+
+from proposed_model.data.dataset import (
+    TrafficDataset
+)
 
 
-from comparison_models.gru.model import GRUBaseline
+
+from comparison_models.gru.model import (
+    GRUBaseline
+)
+
+
 
 
 
@@ -46,50 +52,54 @@ from comparison_models.gru.model import GRUBaseline
 CURRENT_DIR = Path(__file__).resolve().parent
 
 
-OUTPUT_DIR = (
-    CURRENT_DIR
-    /
-    "outputs"
-)
+OUTPUT_DIR = CURRENT_DIR / "outputs"
 
 
 CHECKPOINT_DIR = (
-    OUTPUT_DIR
-    /
+    OUTPUT_DIR /
     "checkpoints"
 )
 
 
-CHECKPOINT_PATH = (
-    CHECKPOINT_DIR
-    /
-    "GRU_best.pth"
-)
-
-
-HISTORY_PATH = (
-    OUTPUT_DIR
-    /
-    "training_history.json"
-)
 
 
 
 # ======================================================
-# Training
+# Training Function
 # ======================================================
 
 
-def main():
+def train(horizon):
 
 
-    print("=" * 70)
+    print("="*70)
 
     print(
-        "GRU Baseline Training"
+        f"GRU Training | Horizon {horizon} min"
     )
 
-    print("=" * 70)
+    print("="*70)
+
+
+
+    checkpoint_path = (
+
+        CHECKPOINT_DIR
+        /
+        f"GRU_{horizon}min.pth"
+
+    )
+
+
+    history_path = (
+
+        OUTPUT_DIR
+        /
+        f"GRU_{horizon}min_history.json"
+
+    )
+
+
 
 
 
@@ -99,13 +109,22 @@ def main():
 
 
     train_dataset = TrafficDataset(
-        split="train"
+
+        split="train",
+
+        horizon=horizon
+
     )
 
 
     val_dataset = TrafficDataset(
-        split="validation"
+
+        split="validation",
+
+        horizon=horizon
+
     )
+
 
 
     train_loader = DataLoader(
@@ -131,17 +150,22 @@ def main():
 
 
 
+
+
     # -----------------------------
     # Model
     # -----------------------------
 
 
-    model = GRUBaseline()
+    model = GRUBaseline(
 
+        horizon=horizon
 
-    model.to(
-        DEVICE
     )
+
+
+    model.to(DEVICE)
+
 
 
 
@@ -159,7 +183,7 @@ def main():
 
 
 
-    best_val_loss = float("inf")
+    best_loss = float("inf")
 
 
 
@@ -173,47 +197,42 @@ def main():
 
 
 
+
+
+
     # -----------------------------
-    # Epoch Loop
+    # Training Loop
     # -----------------------------
 
 
     for epoch in range(NUM_EPOCHS):
 
 
-        start_time = time.time()
+        start = time.time()
 
 
-
-        # Training
 
         model.train()
 
 
-        train_loss = 0.0
+        train_loss = 0
 
 
 
-        for x, y in train_loader:
+        for x,y in train_loader:
 
 
-            x = x.to(
-                DEVICE
-            )
+            x = x.to(DEVICE)
 
+            y = y.to(DEVICE)
 
-            y = y.to(
-                DEVICE
-            )
 
 
             optimizer.zero_grad()
 
 
 
-            prediction = model(
-                x
-            )
+            prediction = model(x)
 
 
 
@@ -230,6 +249,7 @@ def main():
             loss.backward()
 
 
+
             optimizer.step()
 
 
@@ -242,34 +262,34 @@ def main():
 
 
 
+
+
+        # -------------------------
         # Validation
+        # -------------------------
+
 
         model.eval()
 
 
-        val_loss = 0.0
+        val_loss = 0
 
 
 
         with torch.no_grad():
 
 
-            for x, y in val_loader:
+            for x,y in val_loader:
 
 
-                x = x.to(
-                    DEVICE
-                )
+                x = x.to(DEVICE)
+
+                y = y.to(DEVICE)
 
 
-                y = y.to(
-                    DEVICE
-                )
 
+                prediction = model(x)
 
-                prediction = model(
-                    x
-                )
 
 
                 loss = criterion(
@@ -289,14 +309,22 @@ def main():
 
 
 
+
+
         history["train_loss"].append(
+
             train_loss
+
         )
 
 
         history["val_loss"].append(
+
             val_loss
+
         )
+
+
 
 
 
@@ -304,22 +332,27 @@ def main():
 
             f"Epoch [{epoch+1}/{NUM_EPOCHS}] "
 
-            f"Train Loss: {train_loss:.6f} "
+            f"Train: {train_loss:.4f} "
 
-            f"Val Loss: {val_loss:.6f} "
+            f"Val: {val_loss:.4f} "
 
-            f"Time: {time.time()-start_time:.2f}s"
+            f"Time: {time.time()-start:.2f}s"
 
         )
 
 
 
-        # Save best model
-
-        if val_loss < best_val_loss:
 
 
-            best_val_loss = val_loss
+        # -------------------------
+        # Save Best Model
+        # -------------------------
+
+
+        if val_loss < best_loss:
+
+
+            best_loss = val_loss
 
 
 
@@ -337,30 +370,30 @@ def main():
 
                 {
 
-                    "epoch": epoch + 1,
+                    "epoch": epoch+1,
 
-                    "loss": best_val_loss,
+                    "loss": best_loss,
+
+                    "horizon": horizon,
 
                     "model_state_dict":
                     model.state_dict()
 
                 },
 
-                CHECKPOINT_PATH
+                checkpoint_path
 
             )
-
 
 
             print(
-                "✓ Best GRU checkpoint saved"
+                "✓ GRU checkpoint saved"
             )
 
 
 
-    # -----------------------------
-    # Save History
-    # -----------------------------
+
+
 
 
     OUTPUT_DIR.mkdir(
@@ -375,7 +408,7 @@ def main():
 
     with open(
 
-        HISTORY_PATH,
+        history_path,
 
         "w"
 
@@ -394,29 +427,41 @@ def main():
 
 
 
-    print("=" * 70)
+
+    print("="*70)
 
     print(
-        "GRU Training Completed"
+
+        f"GRU {horizon} min Training Completed"
+
     )
 
 
     print(
+
         "Checkpoint:",
-        CHECKPOINT_PATH
+
+        checkpoint_path
+
     )
 
 
-    print(
-        "History:",
-        HISTORY_PATH
-    )
+    print("="*70)
 
 
-    print("=" * 70)
 
+    return checkpoint_path
+
+
+
+
+
+# ======================================================
+# Direct Run
+# ======================================================
 
 
 if __name__ == "__main__":
 
-    main()
+
+    train(5)

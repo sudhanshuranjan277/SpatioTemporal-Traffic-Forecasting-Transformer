@@ -1,13 +1,12 @@
 """
 LSTM Baseline Training
 
-Output:
-comparison_models/lstm/outputs/
+Dynamic Horizon Training
 
-    checkpoints/
-        LSTM_best.pth
-
-    training_history.json
+Supports:
+3 min
+5 min
+8 min
 """
 
 
@@ -37,6 +36,8 @@ from comparison_models.lstm.model import LSTMBaseline
 
 
 
+
+
 # ======================================================
 # Paths
 # ======================================================
@@ -45,61 +46,83 @@ from comparison_models.lstm.model import LSTMBaseline
 CURRENT_DIR = Path(__file__).resolve().parent
 
 
-OUTPUT_DIR = (
-    CURRENT_DIR
-    /
-    "outputs"
-)
+OUTPUT_DIR = CURRENT_DIR / "outputs"
 
 
 CHECKPOINT_DIR = (
-    OUTPUT_DIR
-    /
+    OUTPUT_DIR /
     "checkpoints"
 )
 
 
-CHECKPOINT_PATH = (
-    CHECKPOINT_DIR
-    /
-    "LSTM_best.pth"
-)
-
-
-HISTORY_PATH = (
-    OUTPUT_DIR
-    /
-    "training_history.json"
-)
 
 
 
 # ======================================================
-# Training
+# Training Function
 # ======================================================
 
 
-def main():
+def train(horizon):
 
 
     print("="*70)
 
     print(
-        "LSTM Baseline Training"
+        f"LSTM Training | Horizon {horizon} min"
     )
 
     print("="*70)
 
 
 
-    train_dataset = TrafficDataset(
-        split="train"
+
+    checkpoint_path = (
+
+        CHECKPOINT_DIR
+        /
+        f"LSTM_{horizon}min.pth"
+
     )
+
+
+
+    history_path = (
+
+        OUTPUT_DIR
+        /
+        f"LSTM_{horizon}min_history.json"
+
+    )
+
+
+
+
+
+    # ==================================================
+    # Dataset
+    # ==================================================
+
+
+    train_dataset = TrafficDataset(
+
+        split="train",
+
+        horizon=horizon
+
+    )
+
 
 
     val_dataset = TrafficDataset(
-        split="validation"
+
+        split="validation",
+
+        horizon=horizon
+
     )
+
+
 
 
 
@@ -114,6 +137,7 @@ def main():
     )
 
 
+
     val_loader = DataLoader(
 
         val_dataset,
@@ -126,11 +150,39 @@ def main():
 
 
 
-    model = LSTMBaseline()
 
-    model.to(
-        DEVICE
+
+    print()
+
+    print(
+        "Train Samples:",
+        len(train_dataset)
     )
+
+    print(
+        "Validation Samples:",
+        len(val_dataset)
+    )
+
+
+
+
+
+    # ==================================================
+    # Model
+    # ==================================================
+
+
+    model = LSTMBaseline(
+
+        horizon=horizon
+
+    )
+
+
+    model.to(DEVICE)
+
+
 
 
 
@@ -148,6 +200,8 @@ def main():
 
 
 
+
+
     best_val_loss = float("inf")
 
 
@@ -162,10 +216,18 @@ def main():
 
 
 
+
+
+    # ==================================================
+    # Training Loop
+    # ==================================================
+
+
     for epoch in range(NUM_EPOCHS):
 
 
         start = time.time()
+
 
 
         model.train()
@@ -178,22 +240,19 @@ def main():
         for x,y in train_loader:
 
 
-            x = x.to(
-                DEVICE
-            )
 
+            x = x.to(DEVICE)
 
-            y = y.to(
-                DEVICE
-            )
+            y = y.to(DEVICE)
+
 
 
             optimizer.zero_grad()
 
 
-            prediction = model(
-                x
-            )
+
+            prediction = model(x)
+
 
 
             loss = criterion(
@@ -205,7 +264,9 @@ def main():
             )
 
 
+
             loss.backward()
+
 
 
             optimizer.step()
@@ -216,8 +277,17 @@ def main():
 
 
 
+
+
         train_loss /= len(train_loader)
 
+
+
+
+
+        # ==================================================
+        # Validation
+        # ==================================================
 
 
         model.eval()
@@ -233,19 +303,15 @@ def main():
             for x,y in val_loader:
 
 
-                x = x.to(
-                    DEVICE
-                )
+
+                x = x.to(DEVICE)
+
+                y = y.to(DEVICE)
 
 
-                y = y.to(
-                    DEVICE
-                )
 
+                prediction = model(x)
 
-                prediction = model(
-                    x
-                )
 
 
                 loss = criterion(
@@ -257,7 +323,10 @@ def main():
                 )
 
 
+
                 val_loss += loss.item()
+
+
 
 
 
@@ -265,14 +334,22 @@ def main():
 
 
 
+
+
         history["train_loss"].append(
+
             train_loss
+
         )
 
 
         history["val_loss"].append(
+
             val_loss
+
         )
+
+
 
 
 
@@ -280,9 +357,9 @@ def main():
 
             f"Epoch [{epoch+1}/{NUM_EPOCHS}] "
 
-            f"Train Loss: {train_loss:.4f} "
+            f"Train: {train_loss:.4f} "
 
-            f"Val Loss: {val_loss:.4f} "
+            f"Val: {val_loss:.4f} "
 
             f"Time: {time.time()-start:.2f}s"
 
@@ -290,7 +367,17 @@ def main():
 
 
 
+
+
+
+
+        # ==================================================
+        # Save Best Model
+        # ==================================================
+
+
         if val_loss < best_val_loss:
+
 
 
             best_val_loss = val_loss
@@ -315,20 +402,34 @@ def main():
 
                     "loss": best_val_loss,
 
+                    "horizon": horizon,
+
                     "model_state_dict":
                     model.state_dict()
 
                 },
 
-                CHECKPOINT_PATH
+                checkpoint_path
 
             )
+
 
 
             print(
-                "✓ LSTM checkpoint saved"
+
+                "✓ Checkpoint saved"
+
             )
 
+
+
+
+
+
+
+    # ==================================================
+    # Save History
+    # ==================================================
 
 
     OUTPUT_DIR.mkdir(
@@ -343,11 +444,12 @@ def main():
 
     with open(
 
-        HISTORY_PATH,
+        history_path,
 
         "w"
 
     ) as f:
+
 
 
         json.dump(
@@ -362,28 +464,52 @@ def main():
 
 
 
+
+
     print("="*70)
 
     print(
-        "LSTM Training Completed"
+
+        f"LSTM {horizon} min Training Completed"
+
     )
 
 
+
     print(
+
         "Checkpoint:",
-        CHECKPOINT_PATH
+
+        checkpoint_path
+
     )
 
 
     print(
+
         "History:",
-        HISTORY_PATH
+
+        history_path
+
     )
+
 
     print("="*70)
 
+
+
+    return checkpoint_path
+
+
+
+
+
+# ======================================================
+# Direct Run
+# ======================================================
 
 
 if __name__ == "__main__":
 
-    main()
+
+    train(5)

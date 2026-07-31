@@ -143,9 +143,9 @@ HORIZON_10_DIR = (
 # Dataset
 # =============================================================================
 
-DATASET_FILES = sorted(
-    PROCESSED_DATA_DIR.glob("*.csv")
-)
+DATASET_FILES = [
+    PROCESSED_DATA_DIR / "location_1_dataset.csv"
+]
 
 
 TIMESTAMP_COLUMN = "simulation_time"
@@ -208,14 +208,15 @@ HISTORY_LENGTH = 12
 FORECAST_HORIZONS = [
     3,      # 3 minutes ahead
     5,      # 5 minutes ahead
-    10      # 10 minutes ahead
+    8       # 8 minutes ahead
 ]
 
 
 # Default horizon
 # Used by normal training/testing
 
-PREDICTION_HORIZON = 5
+PREDICTION_HORIZON = 8
+
 
 
 SLIDING_WINDOW_STRIDE = 1

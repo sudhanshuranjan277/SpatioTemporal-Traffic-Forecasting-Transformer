@@ -1,13 +1,17 @@
 """
 GRU Baseline Model
 
-Used for comparison with TransGTR.
-
 Input:
 (B,T,N,F)
 
 Output:
 (B,H,N)
+
+B = Batch
+T = History Length
+N = Nodes
+F = Features
+H = Forecast Horizon
 """
 
 
@@ -17,128 +21,147 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
+import pandas as pd
+
 
 from proposed_model.configs.config import (
     HISTORY_LENGTH,
-    PREDICTION_HORIZON,
     NUM_INPUT_FEATURES,
+    DATASET_FILES,
+    PREDICTION_HORIZON,
 )
 
 
 
+# ======================================================
+# Dynamic Node Detection
+# ======================================================
+
+
+def get_num_nodes():
+
+    dataframe = pd.read_csv(
+        DATASET_FILES[0]
+    )
+
+    return dataframe["junction_id"].nunique()
+
+
+
+# ======================================================
+# GRU Model
+# ======================================================
 
 
 class GRUBaseline(nn.Module):
 
+
     def __init__(
         self,
-        hidden_dim: int = 128,
-        num_layers: int = 2,
-        dropout: float = 0.1,
+        horizon=None,
+        hidden_dim=128,
+        num_layers=2,
+        dropout=0.1
     ):
 
         super().__init__()
 
 
+
         self.history_length = HISTORY_LENGTH
 
-        self.prediction_horizon = (
-            PREDICTION_HORIZON
+
+        self.input_dim = NUM_INPUT_FEATURES
+
+
+        self.num_nodes = get_num_nodes()
+
+
+
+        self.horizon = (
+
+            horizon
+
+            if horizon is not None
+
+            else PREDICTION_HORIZON
+
         )
 
-        self.input_dim = (
-            NUM_INPUT_FEATURES
-        )
 
-        self.hidden_dim = hidden_dim
-
-
-
-        # --------------------------------------------------
-        # GRU Encoder
-        #
-        # Input:
-        # (B,T,N,F)
-        #
-        # Convert:
-        # (B,T,N*F)
-        # --------------------------------------------------
 
         self.gru = nn.GRU(
 
-            input_size=
-                self.input_dim * 9,
+            input_size=(
 
-            hidden_size=
-                hidden_dim,
+                self.num_nodes *
+                self.input_dim
 
-            num_layers=
-                num_layers,
+            ),
+
+            hidden_size=hidden_dim,
+
+            num_layers=num_layers,
 
             batch_first=True,
 
-            dropout=
+            dropout=(
+
                 dropout
                 if num_layers > 1
-                else 0,
+                else 0
+
+            )
 
         )
 
 
-
-        # --------------------------------------------------
-        # Forecast Head
-        #
-        # hidden_dim -> H*N
-        # --------------------------------------------------
 
         self.output_layer = nn.Linear(
 
             hidden_dim,
 
-            self.prediction_horizon * 9,
+            self.horizon *
+            self.num_nodes
 
         )
 
 
 
-    def forward(
-        self,
-        x: torch.Tensor,
-    ):
+
+    def forward(self,x):
 
 
         if x.ndim != 4:
 
             raise ValueError(
-                "Expected input shape (B,T,N,F)"
+                "Expected input (B,T,N,F)"
             )
 
 
-        batch_size = x.size(0)
+
+        batch = x.size(0)
 
 
-
-        # Flatten nodes + features
 
         x = x.reshape(
 
-            batch_size,
+            batch,
 
             self.history_length,
 
-            -1,
+            -1
 
         )
 
 
 
-        output, _ = self.gru(x)
+        output,_ = self.gru(x)
 
 
-        # Last temporal representation
 
-        output = output[:, -1, :]
+        output = output[:,-1,:]
+
 
 
         output = self.output_layer(
@@ -146,297 +169,66 @@ class GRUBaseline(nn.Module):
         )
 
 
+
         output = output.reshape(
 
-            batch_size,
+            batch,
 
-            self.prediction_horizon,
+            self.horizon,
 
-            9,
+            self.num_nodes
 
         )
 
 
         return output
-    
-    # ==========================================================
-# Unit Test
-# ==========================================================
+
+
+
+
+
+# ======================================================
+# Test
+# ======================================================
 
 
 if __name__ == "__main__":
 
 
-    print("=" * 70)
+    nodes = get_num_nodes()
 
-    print(
-        "LSTM Baseline Test"
+
+    model = GRUBaseline(
+
+        horizon=5
+
     )
 
-    print("=" * 70)
-
-
-
-    batch_size = 4
-
-    num_nodes = 9
-
-
-
-    # Dummy Input
-    #
-    # (B,T,N,F)
-    #
 
     x = torch.randn(
 
-        batch_size,
+        4,
 
         HISTORY_LENGTH,
 
-        num_nodes,
+        nodes,
 
-        NUM_INPUT_FEATURES,
+        NUM_INPUT_FEATURES
 
     )
 
 
-
-    model = GRUBaseline()
-
-
-
-    prediction = model(
-        x
-    )
+    y = model(x)
 
 
 
     print(
-        "Input Shape :",
+        "Input:",
         x.shape
     )
 
 
     print(
-        "Output Shape:",
-        prediction.shape
+        "Output:",
+        y.shape
     )
-
-
-
-    # Expected:
-    #
-    # (B,H,N)
-    #
-
-    expected_shape = (
-
-        batch_size,
-
-        PREDICTION_HORIZON,
-
-        num_nodes,
-
-    )
-
-
-
-    assert prediction.shape == expected_shape, (
-
-        f"Expected {expected_shape}, "
-        f"got {prediction.shape}"
-
-    )
-
-
-
-    print(
-        "✓ Output shape verification passed"
-    )
-
-
-
-    # Parameter Count
-
-    parameters = sum(
-
-        p.numel()
-
-        for p in model.parameters()
-
-        if p.requires_grad
-
-    )
-
-
-
-    print(
-        f"Trainable Parameters: {parameters:,}"
-    )
-
-
-
-    # Backward Test
-
-    loss = prediction.mean()
-
-
-    loss.backward()
-
-
-
-    print(
-        "✓ Backpropagation successful"
-    )
-
-
-
-    print("=" * 70)
-
-    print(
-        "LSTM Baseline test completed successfully"
-    )
-
-    print("=" * 70)
-    
-    
-    # ==========================================================
-# Unit Test
-# ==========================================================
-
-
-if __name__ == "__main__":
-
-
-    print("=" * 70)
-
-    print(
-        "LSTM Baseline Test"
-    )
-
-    print("=" * 70)
-
-
-
-    batch_size = 4
-
-    num_nodes = 9
-
-
-
-    # Dummy Input
-    #
-    # (B,T,N,F)
-    #
-
-    x = torch.randn(
-
-        batch_size,
-
-        HISTORY_LENGTH,
-
-        num_nodes,
-
-        NUM_INPUT_FEATURES,
-
-    )
-
-
-
-    model = GRUBaseline()
-
-
-    prediction = model(
-        x
-    )
-
-
-
-    print(
-        "Input Shape :",
-        x.shape
-    )
-
-
-    print(
-        "Output Shape:",
-        prediction.shape
-    )
-
-
-
-    # Expected:
-    #
-    # (B,H,N)
-    #
-
-    expected_shape = (
-
-        batch_size,
-
-        PREDICTION_HORIZON,
-
-        num_nodes,
-
-    )
-
-
-
-    assert prediction.shape == expected_shape, (
-
-        f"Expected {expected_shape}, "
-        f"got {prediction.shape}"
-
-    )
-
-
-
-    print(
-        "✓ Output shape verification passed"
-    )
-
-
-
-    # Parameter Count
-
-    parameters = sum(
-
-        p.numel()
-
-        for p in model.parameters()
-
-        if p.requires_grad
-
-    )
-
-
-
-    print(
-        f"Trainable Parameters: {parameters:,}"
-    )
-
-
-
-    # Backward Test
-
-    loss = prediction.mean()
-
-
-    loss.backward()
-
-
-
-    print(
-        "✓ Backpropagation successful"
-    )
-
-
-
-    print("=" * 70)
-
-    print(
-        "LSTM Baseline test completed successfully"
-    )
-
-    print("=" * 70)
