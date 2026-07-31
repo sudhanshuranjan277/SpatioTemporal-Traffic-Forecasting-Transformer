@@ -1,0 +1,13 @@
+Model,Horizon,Waiting_Time,Queue_Length,Spillback_Events
+LSTM,3 min,11.7554,3.6892,0
+LSTM,5 min,11.4125,3.6921,0
+LSTM,8 min,11.3411,3.577,0
+GRU,3 min,11.2731,3.6709,0
+GRU,5 min,10.9749,3.4117,0
+GRU,8 min,10.8348,3.5632,0
+GraphWaveNet,3 min,23.7843,9.1266,0
+GraphWaveNet,5 min,20.991,10.3138,1
+GraphWaveNet,8 min,22.6044,10.2295,0
+Transformer,3 min,8.6983,2.7911,0
+Transformer,5 min,7.7448,2.4832,0
+Transformer,8 min,8.1197,2.8055,0

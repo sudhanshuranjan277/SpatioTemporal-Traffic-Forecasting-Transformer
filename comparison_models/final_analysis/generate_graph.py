@@ -316,12 +316,16 @@ def create_horizon_graph(
     metrics = [
 
         "MAE",
+        
+        "MSE",
 
         "RMSE",
 
         "MAPE",
 
-        "R2"
+        "R2",
+        
+        "Accuracy"
 
     ]
 

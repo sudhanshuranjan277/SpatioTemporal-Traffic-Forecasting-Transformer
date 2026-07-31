@@ -12,9 +12,11 @@ Transformer
 Metrics:
 
 MAE
+MSE
 RMSE
 MAPE
 R2
+Accuracy
 
 
 Generates:
@@ -32,7 +34,6 @@ import pandas as pd
 
 
 
-
 # ======================================================
 # Paths
 # ======================================================
@@ -42,7 +43,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 OUTPUT_DIR = (
-
     PROJECT_ROOT
     /
     "comparison_models"
@@ -50,21 +50,23 @@ OUTPUT_DIR = (
     "final_analysis"
     /
     "outputs"
-
 )
 
 
 OUTPUT_DIR.mkdir(
-
     parents=True,
-
     exist_ok=True
-
 )
 
 
 
 
+
+
+
+# ======================================================
+# Model Paths
+# ======================================================
 
 
 MODEL_PATHS = {
@@ -115,7 +117,8 @@ PROJECT_ROOT /
 
 
 
-HORIZONS=[3,5,8]
+HORIZONS = [3,5,8]
+
 
 
 
@@ -130,12 +133,11 @@ HORIZONS=[3,5,8]
 def collect_metrics():
 
 
-    results=[]
+    results = []
 
 
 
-
-    for model,folder in MODEL_PATHS.items():
+    for model, folder in MODEL_PATHS.items():
 
 
 
@@ -143,7 +145,7 @@ def collect_metrics():
 
 
 
-            file=(
+            file = (
 
                 folder /
 
@@ -153,8 +155,8 @@ def collect_metrics():
 
 
 
-            if not file.exists():
 
+            if not file.exists():
 
                 print(
 
@@ -170,10 +172,52 @@ def collect_metrics():
 
 
 
+
             with open(file,"r") as f:
 
+                metrics = json.load(f)
 
-                metrics=json.load(f)
+
+
+
+
+
+
+            mae = metrics["MAE"]
+
+            rmse = metrics["RMSE"]
+
+            mape = metrics["MAPE"]
+
+
+
+
+
+
+            # MSE calculation
+
+            mse = rmse ** 2
+
+
+
+
+
+            # Regression accuracy
+
+            accuracy = (
+
+                100 /
+
+                (
+
+                    1 +
+
+                    mape / 100
+
+                )
+
+            )
+
 
 
 
@@ -195,29 +239,43 @@ def collect_metrics():
 
 
 
+
                 "MAE":
 
-                metrics["MAE"],
+                mae,
+
+
+
+                "MSE":
+
+                mse,
 
 
 
                 "RMSE":
 
-                metrics["RMSE"],
+                rmse,
 
 
 
                 "MAPE":
 
-                metrics["MAPE"],
+                mape,
 
 
 
                 "R2":
 
-                metrics["R2"]
+                metrics["R2"],
+
+
+
+                "Accuracy":
+
+                accuracy
 
             })
+
 
 
 
@@ -252,17 +310,49 @@ def main():
 
 
 
-    df=collect_metrics()
+
+    df = collect_metrics()
 
 
 
-    output_file=(
+
+
+    # Round values
+
+    numeric_columns = [
+
+        "MAE",
+
+        "MSE",
+
+        "RMSE",
+
+        "MAPE",
+
+        "R2",
+
+        "Accuracy"
+
+    ]
+
+
+
+    df[numeric_columns] = df[numeric_columns].round(4)
+
+
+
+
+
+
+    output_file = (
 
         OUTPUT_DIR /
 
         "final_metrics.csv"
 
     )
+
+
 
 
 
@@ -278,6 +368,8 @@ def main():
 
 
 
+
+
     print()
 
     print(
@@ -287,7 +379,12 @@ def main():
     )
 
 
-    print(output_file)
+
+    print(
+
+        output_file
+
+    )
 
 
 
@@ -299,7 +396,8 @@ def main():
 
 
 
-if __name__=="__main__":
 
+
+if __name__=="__main__":
 
     main()
