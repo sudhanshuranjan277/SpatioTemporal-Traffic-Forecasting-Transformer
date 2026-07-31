@@ -18,25 +18,27 @@ env/
 
 
 # ==================================================
-# Jupyter
+# Jupyter Notebook
 # ==================================================
 
 .ipynb_checkpoints/
 
 
 # ==================================================
-# PyTorch Checkpoints
+# PyTorch / Model Checkpoints
 # ==================================================
 
+# Ignore trained model weights
 *.pth
 *.pt
 *.ckpt
 
 
 # ==================================================
-# Dataset Files
+# Dataset
 # ==================================================
 
+# Ignore raw and large datasets
 datasets/raw/
 datasets/processed/
 
@@ -50,16 +52,20 @@ logs/
 
 
 # ==================================================
-# Outputs
+# Keep Research Outputs
 # ==================================================
 
-# Ignore heavy model checkpoints
-proposed_model/outputs/checkpoints/
+# Outputs are NOT ignored
+# Because graphs, metrics and results
+# are required for research reproducibility
 
 
-# Ignore baseline generated outputs
-comparison_models/*/outputs/
-comparison_models/*/outputs/**
+# ==================================================
+# Temporary Files
+# ==================================================
+
+*.tmp
+*.temp
 
 
 # ==================================================
@@ -76,3 +82,11 @@ Thumbs.db
 
 .vscode/
 .idea/
+
+
+# ==================================================
+# Build / Cache
+# ==================================================
+
+*.cache
+.cache/
